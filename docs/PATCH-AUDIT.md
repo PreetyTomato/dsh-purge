@@ -17,14 +17,27 @@
 
 ## 高价值且可救的代码补丁
 
-| ID | 名称 | 真身位置 | 状态 | 处置 |
+> **二次核对结论（对磁盘解包真身逐标记验证）**：下列"高价值代码补丁"在当前 0.2.0-rc.2 宿主上**全部已应用**——之前审计标 DEAD 是因为锚点原文因重构而变，但写入后的 `[dsh-purge-*]` 标记仍在真身里。
+> 因此**这批没有需要重做的**；唯一真正新增价值是把 `#74` 的锚点改成"多候选 + 幂等"，避免升级后它一旦失效就整条丢失。
+
+| ID | 名称 | 真身位置 | 现状 | 处置 |
 |---|---|---|---|---|
-| #74 | ASSEMBLE_BEFORE_PRESTEP | `dsh-agent-loop/lib/index.js` `this.inbox.claim(...)` | 已重做锚 + 多候选 | **已修**（本次提交） |
-| #87/#88 | HUNG_PROMPT_* | `dsh-agent-loop/lib/index.js` `renderPrompt(assembly)` 下方 | 已在真身应用 | 无需重打 |
-| #55 | SYSTEM_PROMPT_REPLACE_HEAD | `dsh-agent-loop` 步进循环内 | 锚点需重找 | 后续 |
-| #66 | SYSTEM_PROMPT_RENDER_GUARD | `dsh-agent-loop` / `system-prompt` `renderPrompt` | 锚点需重找 | 后续 |
-| #59 | OFFICIAL_AUTO_REVIEW_PASSTHROUGH | `dsh-experimental-auto-review` `tools/pre-execute` | 锚点需重找 | 后续 |
-| #85/#86 | SESSION_*_FOLLOWUP | `dsh-api-session-controller` `request.mode === "steer"` | 真身无此串 | 需重新定位 |
+| #74 | ASSEMBLE_BEFORE_PRESTEP | `dsh-agent-loop/lib/index.js` `this.inbox.claim(...)` | 曾待修 | **已改多候选锚 + skipIfMarked（本次提交）**，真身 `node --check` 通过 |
+| #87/#88 | HUNG_PROMPT_* | `dsh-agent-loop/lib/index.js` `renderPrompt(assembly)` 下方 | 已应用（标记恒在） | 无需重打 |
+| #55 | SYSTEM_PROMPT_REPLACE_HEAD | `dsh-agent-loop` `inHistory: false // [dsh-purge] system prompt replaces the first node` | **已应用** | 无需重打 |
+| #66 | SYSTEM_PROMPT_RENDER_GUARD | `dsh-system-prompt/lib/index.js` `renderPrompt` `guard undefined section text` | **已应用** | 无需重打 |
+| #59 | OFFICIAL_AUTO_REVIEW_PASSTHROUGH | `dsh-experimental-auto-review/lib/index.js` `return next(); // soft intercept disabled` | **已应用** | 无需重打 |
+| #85 | SESSION_PROMPT_ALWAYS_FOLLOWUP | `dsh-api-session-controller/lib/index.js` `agent.followup(message); // [dsh-purge-85]` | **已应用** | 无需重打 |
+| #86 | SESSION_STEER_ALWAYS_FOLLOWUP | 同上 `case "steer": … agent.followup(message); // [dsh-purge-86]` | **已应用** | 无需重打 |
+
+### 仍待处理的 DEAD（真身无锚点、需按当前代码重新定位或判断是否需要）
+
+| ID | 名称 | 现状 | 备注 |
+|---|---|---|---|
+| #13/#14/#35 | ESCALATION_* | `dsh-escalation` 包在 0.2 **不存在** | 升级豁免类需迁移到 `dsh-sandbox`/`dsh-typert` 才可能生效；当前宿主无对应文件 |
+| #64/#65 | HOOKS_*_DENY_ALLOW | 标记 `__dsh_purge_deny_disabled__` 在真身未检出 | 需要先确认 hooks 机制在本宿主是否启用 |
+
+> 结论：其余标 DEAD 的补丁，其目标包/方法在 0.2.0-rc.2 已被重构或移除，非简单重锚可解；是否迁移按需再评估。
 
 ## 重要发现 / Gotchas
 
